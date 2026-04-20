@@ -7,15 +7,42 @@
 <style>
 body {
     font-family: "Comic Sans MS", cursive;
-    background: linear-gradient(rgba(255,240,245,0.7), rgba(255,230,240,0.7)),
-                url("https://images.unsplash.com/photo-1518895949257-7621c3c786d7");
-    background-size: cover;
-    background-position: center;
-    text-align: center;
     margin: 0;
+    text-align: center;
+
+    /* 🌸 Ultra aesthetic background */
+    background:
+        radial-gradient(circle at top left, rgba(255,182,193,0.4), transparent 40%),
+        radial-gradient(circle at bottom right, rgba(255,105,180,0.3), transparent 50%),
+        linear-gradient(135deg, #ffe6f0, #fff0f5, #ffe0ec);
+
+    background-attachment: fixed;
+    overflow-x: hidden;
 }
 
-h1 { color: #ff4d88; margin-top: 20px; }
+/* 🌸 glowing blobs */
+.blob {
+    position: fixed;
+    width: 200px;
+    height: 200px;
+    background: rgba(255,105,180,0.2);
+    filter: blur(60px);
+    border-radius: 50%;
+    z-index: -1;
+    animation: floatBlob 10s infinite ease-in-out;
+}
+
+.b1 { top: 10%; left: 10%; }
+.b2 { bottom: 10%; right: 10%; background: rgba(255,182,193,0.25); }
+.b3 { top: 50%; left: 50%; background: rgba(255,192,203,0.2); }
+
+@keyframes floatBlob {
+    0% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(30px,-40px) scale(1.2); }
+    100% { transform: translate(0,0) scale(1); }
+}
+
+h1 { color: #ff4d88; }
 
 .upload-box {
     margin: 20px;
@@ -44,19 +71,23 @@ button {
     padding: 20px;
 }
 
+/* 📸 Polaroid cards */
 .card {
     background: white;
     padding: 10px;
     border-radius: 15px;
     width: 200px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    position: relative;
     transform: rotate(-2deg);
-    animation: fadeIn 0.3s ease;
+    transition: 0.3s;
+    position: relative;
 }
 
-.card:nth-child(even) {
-    transform: rotate(2deg);
+.card:nth-child(even) { transform: rotate(2deg); }
+
+.card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 15px 30px rgba(255,105,180,0.4);
 }
 
 .card img {
@@ -64,42 +95,49 @@ button {
     border-radius: 10px;
 }
 
-.card:hover {
-    transform: scale(1.03);
-    transition: 0.3s ease;
-    box-shadow: 0 15px 30px rgba(255, 105, 180, 0.4);
-}
-
 .sticker {
     position: absolute;
-    font-size: 24px;
-    top: 5px;
     right: 10px;
+    top: 5px;
 }
 
-.delete-btn {
-    background: red;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
-}
-
+/* 💗 hearts */
 .heart {
     position: fixed;
     color: pink;
-    animation: floatUp 5s linear infinite;
+    animation: floatUp 5s linear;
 }
 
 @keyframes floatUp {
     from { transform: translateY(100vh); opacity: 1; }
     to { transform: translateY(-10vh); opacity: 0; }
 }
+
+/* ✨ sparkles */
+.sparkle {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: sparkleAnim 600ms ease-out forwards;
+    box-shadow: 0 0 10px pink, 0 0 20px #ff66a3;
+}
+
+@keyframes sparkleAnim {
+    0% { transform: scale(1) translate(0,0); opacity: 1; }
+    100% { transform: scale(0) translate(var(--x), var(--y)); opacity: 0; }
+}
 </style>
 </head>
 
 <body>
+
+<!-- 🌸 blobs -->
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
 
 <!-- LOGIN PAGE -->
 <div id="loginPage">
@@ -110,7 +148,6 @@ button {
 <!-- APP PAGE -->
 <div id="appPage" style="display:none;">
     <h1>Our Love Story 💖</h1>
-
     <button onclick="logout()">Logout 🚪</button>
 
     <div class="upload-box">
@@ -129,7 +166,7 @@ import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, setPersistence, browserSessionPersistence, signOut } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// Firebase config
+/* 🔥 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyDj0nKzzm5s-dHnPko1mCqjBQ-kRL-yG1A",
   authDomain: "art-gallery-54a36.firebaseapp.com",
@@ -140,34 +177,28 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
 
-// 🔐 Force login every session (no auto skip)
 setPersistence(auth, browserSessionPersistence);
 
 const provider = new GoogleAuthProvider();
 
-// Allowed users
 const allowedUsers = [
   "aayanyadav002@gmail.com",
   "renesha231@gmail.com"
 ];
 
-// LOGIN
-window.login = async function () {
-    try {
-        await signInWithPopup(auth, provider);
-    } catch (error) {
-        alert("Login failed: " + error.message);
-    }
+/* 🔐 LOGIN */
+window.login = async () => {
+    await signInWithPopup(auth, provider);
 };
 
-// LOGOUT
-window.logout = async function () {
+/* 🚪 LOGOUT */
+window.logout = async () => {
     await signOut(auth);
 };
 
-// AUTH CHECK
+/* 🔍 AUTH CHECK */
 onAuthStateChanged(auth, user => {
-    const email = user?.email || user?.providerData?.[0]?.email;
+    const email = user?.email;
 
     if (!user || !allowedUsers.includes(email)) {
         document.getElementById("loginPage").style.display = "block";
@@ -181,17 +212,46 @@ onAuthStateChanged(auth, user => {
     render();
 });
 
-// ADD MEMORY
-window.addMemory = async function () {
-    const file = document.getElementById("imageInput").files[0];
+/* ⚡ compress image */
+function compressImage(file) {
+    return new Promise(resolve => {
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = e => img.src = e.target.result;
+
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            const maxW = 800;
+            const scale = maxW / img.width;
+
+            canvas.width = maxW;
+            canvas.height = img.height * scale;
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(blob => resolve(blob), "image/jpeg", 0.7);
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+
+/* ➕ ADD MEMORY */
+window.addMemory = async () => {
+    let file = document.getElementById("imageInput").files[0];
     const date = document.getElementById("dateInput").value;
     const caption = document.getElementById("captionInput").value;
 
     if (!file || !date) return alert("Add photo + date!");
 
+    file = await compressImage(file);
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "art_gallery"); // ✅ FIXED
+    formData.append("upload_preset", "art_gallery");
 
     const res = await fetch("https://api.cloudinary.com/v1_1/ddolpgtum/image/upload", {
         method: "POST",
@@ -199,11 +259,6 @@ window.addMemory = async function () {
     });
 
     const data = await res.json();
-
-    if (!data.secure_url) {
-        alert("Upload failed. Check Cloudinary preset.");
-        return;
-    }
 
     await addDoc(collection(db, "memories"), {
         img: data.secure_url,
@@ -214,64 +269,68 @@ window.addMemory = async function () {
     render();
 };
 
-// DELETE
-window.deleteMemory = async function (id) {
+/* 🗑 DELETE */
+window.deleteMemory = async (id) => {
     await deleteDoc(doc(db, "memories", id));
     render();
 };
 
-// RENDER
+/* 🎨 RENDER */
 async function render() {
     const container = document.getElementById("gallery");
     container.innerHTML = "";
 
     const snapshot = await getDocs(collection(db, "memories"));
-    let memories = [];
-
-    snapshot.forEach(docSnap => {
-        memories.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    memories.sort((a,b) => new Date(a.date) - new Date(b.date));
 
     const stickers = ["💖","🌸","✨","🐻","💘","🦋","🎀","🌈"];
 
-    memories.forEach(m => {
+    snapshot.forEach(docSnap => {
+        const m = docSnap.data();
         const sticker = stickers[Math.floor(Math.random()*stickers.length)];
 
         container.innerHTML += `
-            <div class="card">
-                <div class="sticker">${sticker}</div>
-              <img src="${m.img.replace('/upload/', '/upload/w_400,q_auto/')}" loading="lazy">
-                <p>${m.date}</p>
-                <p>${m.caption}</p>
-                <button class="delete-btn" onclick="deleteMemory('${m.id}')">Delete</button>
-            </div>
-        `;
+        <div class="card">
+            <div class="sticker">${sticker}</div>
+            <img src="${m.img.replace('/upload/', '/upload/w_400,q_auto/')}">
+            <p>${m.date}</p>
+            <p>${m.caption}</p>
+            <button onclick="deleteMemory('${docSnap.id}')">Delete</button>
+        </div>`;
     });
 }
 
-// Floating hearts
-let heartCount = 0;
-
+/* 💗 hearts */
 setInterval(() => {
-    if (heartCount > 15) return; // limit
+    if (document.querySelectorAll(".heart").length > 12) return;
 
     const heart = document.createElement("div");
     heart.className = "heart";
     heart.innerHTML = "💗";
     heart.style.left = Math.random() * 100 + "vw";
-    heart.style.fontSize = (20 + Math.random()*20) + "px";
+    heart.style.fontSize = (15 + Math.random()*15) + "px";
 
     document.body.appendChild(heart);
-    heartCount++;
+    setTimeout(() => heart.remove(), 5000);
+}, 1200);
 
-    setTimeout(() => {
-        heart.remove();
-        heartCount--;
-    }, 5000);
-}, 1500);
+/* ✨ sparkle click */
+document.addEventListener("click", (e) => {
+    for (let i = 0; i < 8; i++) {
+        const sparkle = document.createElement("div");
+        sparkle.className = "sparkle";
 
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = Math.random() * 40;
+
+        sparkle.style.left = e.clientX + "px";
+        sparkle.style.top = e.clientY + "px";
+        sparkle.style.setProperty("--x", Math.cos(angle)*distance + "px");
+        sparkle.style.setProperty("--y", Math.sin(angle)*distance + "px");
+
+        document.body.appendChild(sparkle);
+        setTimeout(() => sparkle.remove(), 600);
+    }
+});
 </script>
 
 </body>
