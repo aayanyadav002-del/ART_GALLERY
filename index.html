@@ -15,10 +15,8 @@ body {
     margin: 0;
 }
 
-/* Headings */
 h1 { color: #ff4d88; margin-top: 20px; }
 
-/* Upload box */
 .upload-box {
     margin: 20px;
     padding: 15px;
@@ -28,7 +26,6 @@ h1 { color: #ff4d88; margin-top: 20px; }
     background: rgba(255,255,255,0.7);
 }
 
-/* Buttons */
 button {
     margin: 5px;
     padding: 8px 12px;
@@ -39,7 +36,6 @@ button {
     cursor: pointer;
 }
 
-/* Gallery */
 #gallery {
     display: flex;
     flex-wrap: wrap;
@@ -48,7 +44,6 @@ button {
     padding: 20px;
 }
 
-/* Cards (Polaroid style) */
 .card {
     background: white;
     padding: 10px;
@@ -69,14 +64,12 @@ button {
     border-radius: 10px;
 }
 
-/* Hover glow */
 .card:hover {
     transform: scale(1.07);
     transition: 0.3s ease;
     box-shadow: 0 15px 30px rgba(255, 105, 180, 0.4);
 }
 
-/* Sticker */
 .sticker {
     position: absolute;
     font-size: 24px;
@@ -84,18 +77,15 @@ button {
     right: 10px;
 }
 
-/* Delete button */
 .delete-btn {
     background: red;
 }
 
-/* Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
 }
 
-/* Floating hearts */
 .heart {
     position: fixed;
     color: pink;
@@ -119,8 +109,9 @@ button {
 
 <!-- APP PAGE -->
 <div id="appPage" style="display:none;">
-
     <h1>Our Love Story 💖</h1>
+
+    <button onclick="logout()">Logout 🚪</button>
 
     <div class="upload-box">
         <input type="file" id="imageInput"><br>
@@ -135,10 +126,10 @@ button {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, setPersistence, browserLocalPersistence } 
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, setPersistence, browserSessionPersistence, signOut } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// 🔥 Firebase config
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDj0nKzzm5s-dHnPko1mCqjBQ-kRL-yG1A",
   authDomain: "art-gallery-54a36.firebaseapp.com",
@@ -149,17 +140,18 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
 
-setPersistence(auth, browserLocalPersistence);
+// 🔐 Force login every session (no auto skip)
+setPersistence(auth, browserSessionPersistence);
 
 const provider = new GoogleAuthProvider();
 
-// ✅ Allowed users
+// Allowed users
 const allowedUsers = [
   "aayanyadav002@gmail.com",
   "renesha231@gmail.com"
 ];
 
-// 🔐 LOGIN
+// LOGIN
 window.login = async function () {
     try {
         await signInWithPopup(auth, provider);
@@ -168,7 +160,12 @@ window.login = async function () {
     }
 };
 
-// 🔁 AUTH STATE (redirect logic)
+// LOGOUT
+window.logout = async function () {
+    await signOut(auth);
+};
+
+// AUTH CHECK
 onAuthStateChanged(auth, user => {
     const email = user?.email || user?.providerData?.[0]?.email;
 
@@ -184,7 +181,7 @@ onAuthStateChanged(auth, user => {
     render();
 });
 
-// ➕ ADD MEMORY
+// ADD MEMORY
 window.addMemory = async function () {
     const file = document.getElementById("imageInput").files[0];
     const date = document.getElementById("dateInput").value;
@@ -194,7 +191,7 @@ window.addMemory = async function () {
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("ART GALLERY", "art_gallery");
+    formData.append("upload_preset", "art_gallery"); // ✅ FIXED
 
     const res = await fetch("https://api.cloudinary.com/v1_1/ddolpgtum/image/upload", {
         method: "POST",
@@ -202,6 +199,11 @@ window.addMemory = async function () {
     });
 
     const data = await res.json();
+
+    if (!data.secure_url) {
+        alert("Upload failed. Check Cloudinary preset.");
+        return;
+    }
 
     await addDoc(collection(db, "memories"), {
         img: data.secure_url,
@@ -212,13 +214,13 @@ window.addMemory = async function () {
     render();
 };
 
-// 🗑 DELETE
+// DELETE
 window.deleteMemory = async function (id) {
     await deleteDoc(doc(db, "memories", id));
     render();
 };
 
-// 🎨 RENDER
+// RENDER
 async function render() {
     const container = document.getElementById("gallery");
     container.innerHTML = "";
@@ -249,7 +251,7 @@ async function render() {
     });
 }
 
-// 💗 FLOATING HEARTS
+// Floating hearts
 setInterval(() => {
     const heart = document.createElement("div");
     heart.className = "heart";
