@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Our Love Gallery 💕</title>
+
+<style>
+body {
+    font-family: "Comic Sans MS", cursive;
+    background: linear-gradient(rgba(255,240,245,0.7), rgba(255,230,240,0.7)),
+                url("https://images.unsplash.com/photo-1518895949257-7621c3c786d7");
+    background-size: cover;
+    background-position: center;
+    text-align: center;
+    margin: 0;
+}
+
+/* Headings */
+h1 { color: #ff4d88; margin-top: 20px; }
+
+/* Upload box */
+.upload-box {
+    margin: 20px;
+    padding: 15px;
+    border-radius: 15px;
+    display: inline-block;
+    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.7);
+}
+
+/* Buttons */
+button {
+    margin: 5px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: none;
+    background: #ff66a3;
+    color: white;
+    cursor: pointer;
+}
+
+/* Gallery */
+#gallery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Cards (Polaroid style) */
+.card {
+    background: white;
+    padding: 10px;
+    border-radius: 15px;
+    width: 200px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    position: relative;
+    transform: rotate(-2deg);
+    animation: fadeIn 0.5s ease;
+}
+
+.card:nth-child(even) {
+    transform: rotate(2deg);
+}
+
+.card img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+/* Hover glow */
+.card:hover {
+    transform: scale(1.07);
+    transition: 0.3s ease;
+    box-shadow: 0 15px 30px rgba(255, 105, 180, 0.4);
+}
+
+/* Sticker */
+.sticker {
+    position: absolute;
+    font-size: 24px;
+    top: 5px;
+    right: 10px;
+}
+
+/* Delete button */
+.delete-btn {
+    background: red;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Floating hearts */
+.heart {
+    position: fixed;
+    color: pink;
+    animation: floatUp 5s linear infinite;
+}
+
+@keyframes floatUp {
+    from { transform: translateY(100vh); opacity: 1; }
+    to { transform: translateY(-10vh); opacity: 0; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+    <h1>Our Love Story 💖</h1>
+    <button onclick="login()">Login 🔐</button>
+</div>
+
+<!-- APP PAGE -->
+<div id="appPage" style="display:none;">
+
+    <h1>Our Love Story 💖</h1>
+
+    <div class="upload-box">
+        <input type="file" id="imageInput"><br>
+        <input type="date" id="dateInput"><br>
+        <input type="text" id="captionInput" placeholder="Cute caption..."><br>
+        <button onclick="addMemory()">Add Memory 💕</button>
+    </div>
+
+    <div id="gallery"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, setPersistence, browserLocalPersistence } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// 🔥 Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDj0nKzzm5s-dHnPko1mCqjBQ-kRL-yG1A",
+  authDomain: "art-gallery-54a36.firebaseapp.com",
+  projectId: "art-gallery-54a36",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth();
+
+setPersistence(auth, browserLocalPersistence);
+
+const provider = new GoogleAuthProvider();
+
+// ✅ Allowed users
+const allowedUsers = [
+  "aayanyadav002@gmail.com",
+  "renesha231@gmail.com"
+];
+
+// 🔐 LOGIN
+window.login = async function () {
+    try {
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        alert("Login failed: " + error.message);
+    }
+};
+
+// 🔁 AUTH STATE (redirect logic)
+onAuthStateChanged(auth, user => {
+    const email = user?.email || user?.providerData?.[0]?.email;
+
+    if (!user || !allowedUsers.includes(email)) {
+        document.getElementById("loginPage").style.display = "block";
+        document.getElementById("appPage").style.display = "none";
+        return;
+    }
+
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("appPage").style.display = "block";
+
+    render();
+});
+
+// ➕ ADD MEMORY
+window.addMemory = async function () {
+    const file = document.getElementById("imageInput").files[0];
+    const date = document.getElementById("dateInput").value;
+    const caption = document.getElementById("captionInput").value;
+
+    if (!file || !date) return alert("Add photo + date!");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("ART GALLERY", "art_gallery");
+
+    const res = await fetch("https://api.cloudinary.com/v1_1/ddolpgtum/image/upload", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await res.json();
+
+    await addDoc(collection(db, "memories"), {
+        img: data.secure_url,
+        date,
+        caption
+    });
+
+    render();
+};
+
+// 🗑 DELETE
+window.deleteMemory = async function (id) {
+    await deleteDoc(doc(db, "memories", id));
+    render();
+};
+
+// 🎨 RENDER
+async function render() {
+    const container = document.getElementById("gallery");
+    container.innerHTML = "";
+
+    const snapshot = await getDocs(collection(db, "memories"));
+    let memories = [];
+
+    snapshot.forEach(docSnap => {
+        memories.push({ id: docSnap.id, ...docSnap.data() });
+    });
+
+    memories.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    const stickers = ["💖","🌸","✨","🐻","💘","🦋","🎀","🌈"];
+
+    memories.forEach(m => {
+        const sticker = stickers[Math.floor(Math.random()*stickers.length)];
+
+        container.innerHTML += `
+            <div class="card">
+                <div class="sticker">${sticker}</div>
+                <img src="${m.img}">
+                <p>${m.date}</p>
+                <p>${m.caption}</p>
+                <button class="delete-btn" onclick="deleteMemory('${m.id}')">Delete</button>
+            </div>
+        `;
+    });
+}
+
+// 💗 FLOATING HEARTS
+setInterval(() => {
+    const heart = document.createElement("div");
+    heart.className = "heart";
+    heart.innerHTML = "💗";
+    heart.style.left = Math.random() * 100 + "vw";
+    heart.style.fontSize = (20 + Math.random()*20) + "px";
+
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), 5000);
+}, 500);
+
+</script>
+
+</body>
+</html>
